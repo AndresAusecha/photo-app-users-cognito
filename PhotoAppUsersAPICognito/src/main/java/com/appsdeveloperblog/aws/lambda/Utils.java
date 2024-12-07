@@ -7,8 +7,6 @@ import com.amazonaws.util.Base64;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.Map;
 
 public class Utils {
      static String decryptKey(String name) {

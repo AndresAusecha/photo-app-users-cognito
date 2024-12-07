@@ -8,10 +8,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityPr
 import software.amazon.awssdk.services.cognitoidentityprovider.model.*;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -85,6 +82,37 @@ public class CognitoUserService {
         createUserResult.addProperty("isConfirmed", response.userConfirmed());
 
         return createUserResult;
+    }
+
+    public JsonObject userLogin(JsonObject loginDetails, String appClientId, String appClientSecret){
+        String email = loginDetails.get("email").getAsString();
+        String generatedSecretHash = calculateSecretHash(appClientId, appClientSecret, email);
+        Map<String, String> params = new HashMap<String,String>() {
+            {
+                put("USERNAME", email);
+                put("PASSWORD", loginDetails.get("password").getAsString());
+                put("SECRET_HASH", generatedSecretHash);
+            }
+        };
+        InitiateAuthRequest request = InitiateAuthRequest
+                .builder()
+                .clientId(appClientId)
+                .authFlow(AuthFlowType.USER_PASSWORD_AUTH)
+                .authParameters(params)
+                .build();
+        InitiateAuthResponse response = cognitoIdentityProvider.initiateAuth(request);
+        AuthenticationResultType result = response.authenticationResult();
+
+        JsonObject loginUserResult = new JsonObject();
+
+        loginUserResult.addProperty("isSuccessful", response.sdkHttpResponse().isSuccessful());
+        loginUserResult.addProperty("statusCode", response.sdkHttpResponse().statusCode());
+        loginUserResult.addProperty("idToken", result.idToken());
+        loginUserResult.addProperty("accessToKen", result.accessToken());
+        loginUserResult.addProperty("refreshToKen", result.refreshToken());
+
+
+        return loginUserResult;
     }
 
     public JsonObject confirmUserSignup(
