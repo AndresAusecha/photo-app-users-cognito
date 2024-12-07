@@ -6,7 +6,6 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.appsdeveloperblog.aws.lambda.service.CognitoUserService;
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
@@ -20,8 +19,8 @@ public class ConfirmUserHandler implements RequestHandler<APIGatewayProxyRequest
 
     public ConfirmUserHandler() {
         this.cognitoUserService = new CognitoUserService(System.getenv("AWS_REGION"));
-        this.appClientId = System.getenv("COGNITO_POOL_APP_CLIENT_ID");
-        this.appClientSecret = System.getenv("COGNITO_POOL_APP_CLIENT_SECRET");
+        this.appClientId = Utils.decryptKey("COGNITO_POOL_APP_CLIENT_ID");
+        this.appClientSecret = Utils.decryptKey("COGNITO_POOL_APP_CLIENT_SECRET");
     }
 
     @Override
