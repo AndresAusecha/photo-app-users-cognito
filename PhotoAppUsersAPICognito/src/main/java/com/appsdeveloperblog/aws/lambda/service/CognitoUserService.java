@@ -137,4 +137,23 @@ public class CognitoUserService {
         return confirmUserResponse;
 
     }
+
+    public JsonObject getUser(String accessToken) {
+        GetUserRequest req = GetUserRequest.builder().accessToken(accessToken).build();
+        GetUserResponse res = cognitoIdentityProvider.getUser(req);
+
+        JsonObject getUserResult = new JsonObject();
+
+        getUserResult.addProperty("isSuccessful", res.sdkHttpResponse().isSuccessful());
+        getUserResult.addProperty("statusCode", res.sdkHttpResponse().statusCode());
+
+        List<AttributeType> userAttributes = res.userAttributes();
+        JsonObject userDetails = new JsonObject();
+        userAttributes.forEach((attribute) -> {
+            userDetails.addProperty(attribute.name(), attribute.value());
+        });
+        getUserResult.add("user", userDetails);
+
+        return getUserResult;
+    }
 }
