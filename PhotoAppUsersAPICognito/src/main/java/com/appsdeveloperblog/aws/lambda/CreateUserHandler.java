@@ -9,7 +9,6 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.appsdeveloperblog.aws.lambda.service.CognitoUserService;
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
@@ -24,6 +23,12 @@ public class CreateUserHandler implements RequestHandler<APIGatewayProxyRequestE
     private String appClientId;
 
     private String appClientSecret;
+
+    public CreateUserHandler(CognitoUserService cognitoUserService, String appClientId, String appClientSecret) {
+        this.cognitoUserService = cognitoUserService;
+        this.appClientId = appClientId;
+        this.appClientSecret = appClientSecret;
+    }
 
     public CreateUserHandler() {
         this.cognitoUserService = new CognitoUserService(System.getenv("AWS_REGION"));

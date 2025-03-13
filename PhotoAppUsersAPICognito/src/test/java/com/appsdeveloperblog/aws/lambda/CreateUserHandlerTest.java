@@ -1,23 +1,84 @@
 package com.appsdeveloperblog.aws.lambda;
 
-import com.appsdeveloperblog.aws.lambda.CreateUserHandler;
+import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import com.appsdeveloperblog.aws.lambda.service.CognitoUserService;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 
+import java.util.UUID;
+
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.*;
+
+
+@RunWith(MockitoJUnitRunner.class)
 public class CreateUserHandlerTest {
+  @Mock
+  CognitoUserService cognitoUserService;
+
+  @Mock
+  APIGatewayProxyRequestEvent apiGatewayProxyRequestEvent;
+
+  @Mock
+  Context context;
+
+  @Mock
+  LambdaLogger logger;
+
+  @InjectMocks
+  CreateUserHandler handler;
+
+  @BeforeEach
+  public void runBeforeEachTestMethod() {
+    System.out.println("Executing @BeforeEach test");
+  }
+
+  @AfterEach
+  public void runAfterEachTestMethod() {
+    System.out.println("Executing @AfterEach test");
+  }
+
   @Test
-  public void successfulResponse() {
-//    CreateUserHandler app = new CreateUserHandler();
-//    APIGatewayProxyResponseEvent result = app.handleRequest(null, null);
-//    assertEquals(result.getStatusCode().intValue(), 200);
-//    assertEquals(result.getHeaders().get("Content-Type"), "application/json");
-//    String content = result.getBody();
-//    assertNotNull(content);
-//    assertTrue(content.contains("\"message\""));
-//    assertTrue(content.contains("\"hello world\""));
-//    assertTrue(content.contains("\"location\""));
+  public void testHandleRequest_whenValidDetailsProvided_returnsSuccessfulResponse() {
+    // Arrange or given
+    JsonObject userDetails = new JsonObject();
+    userDetails.addProperty("firstName", "Andres");
+    userDetails.addProperty("lastName", "Ausecha");
+    userDetails.addProperty("email", "daausecham@gmail.com");
+    userDetails.addProperty("password", "12345");
+
+    String userDetailsAsEmail = new Gson().toJson(userDetails);
+
+    when(apiGatewayProxyRequestEvent.getBody()).thenReturn(userDetailsAsEmail);
+
+    when(context.getLogger()).thenReturn(logger);
+
+    JsonObject createUserResult = new JsonObject();
+    createUserResult.addProperty("isSuccessful", true);
+    createUserResult.addProperty("statusCode", 200);
+    createUserResult.addProperty("cognitoUserId", UUID.randomUUID().toString());
+    createUserResult.addProperty("isConfirmed", false);
+
+    when(cognitoUserService.createUser(any(), any(), any(), any())).thenReturn(createUserResult);
+
+    // act or when
+    APIGatewayProxyResponseEvent responseEvent = handler.handleRequest(apiGatewayProxyRequestEvent, context);
+    String responseBody = responseEvent.getBody();
+    JsonObject responseBodyJson = JsonParser.parseString(responseBody).getAsJsonObject();
+
+    // assert or then
+    verify(logger, times(2)).log(anyString());
+    assertTrue(responseBodyJson.get("isSuccessful").getAsBoolean());
   }
 }
