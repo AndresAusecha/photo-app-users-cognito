@@ -46,10 +46,11 @@ public class CreateUserHandler implements RequestHandler<APIGatewayProxyRequestE
         String requestBody = input.getBody();
         LambdaLogger logger = context.getLogger();
         logger.log("Original json" + requestBody);
-        JsonObject parsedBody = JsonParser.parseString(requestBody).getAsJsonObject();
 
         try {
             logger.log("starting to process the body");
+            JsonObject parsedBody = JsonParser.parseString(requestBody).getAsJsonObject();
+
             JsonObject createUserResult = cognitoUserService.createUser(parsedBody, appClientId, appClientSecret, context);
             response.withStatusCode(200);
             String jsonResponseBody = createUserResult.toString();
@@ -57,7 +58,11 @@ public class CreateUserHandler implements RequestHandler<APIGatewayProxyRequestE
         } catch (AwsServiceException e) {
             logger.log(e.awsErrorDetails().errorMessage());
             response.withStatusCode(500);
-            response.withBody(e.awsErrorDetails().errorMessage());
+            response.withBody("{ " + "\"message\":" + "\"" + e.awsErrorDetails().errorMessage() + "\"" + "}");
+        }  catch (IllegalStateException e) {
+            logger.log(e.getMessage());
+            response.withStatusCode(500);
+            response.withBody("{ " + "\"message\":" + "\"" + e.getMessage() + "\"" + "}");
         }
 
 

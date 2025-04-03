@@ -18,7 +18,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.UUID;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 
@@ -42,6 +42,7 @@ public class CreateUserHandlerTest {
   @BeforeEach
   public void runBeforeEachTestMethod() {
     System.out.println("Executing @BeforeEach test");
+
   }
 
   @AfterEach
@@ -80,5 +81,19 @@ public class CreateUserHandlerTest {
     // assert or then
     verify(logger, times(2)).log(anyString());
     assertTrue(responseBodyJson.get("isSuccessful").getAsBoolean());
+  }
+
+  @Test
+  public void testHandleRequest_whenEmptyBodyProvided_returnErrorResponse() {
+    when(apiGatewayProxyRequestEvent.getBody()).thenReturn("");
+    when(context.getLogger()).thenReturn(logger);
+
+    // act or when
+    APIGatewayProxyResponseEvent responseEvent = handler.handleRequest(apiGatewayProxyRequestEvent, context);
+    String responseBody = responseEvent.getBody();
+    JsonObject responseBodyJson = JsonParser.parseString(responseBody).getAsJsonObject();
+
+    assertEquals(Integer.valueOf(500), responseEvent.getStatusCode());
+    assertNotNull(responseBodyJson.get("message"));
   }
 }
