@@ -15,6 +15,9 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.http.SdkHttpResponse;
 
 import java.util.UUID;
 
@@ -95,5 +98,35 @@ public class CreateUserHandlerTest {
 
     assertEquals(Integer.valueOf(500), responseEvent.getStatusCode());
     assertNotNull(responseBodyJson.get("message"));
+  }
+
+  @Test
+  public void testHandleRequest_whenAwsServiceExceptionTakesPlace_returnErrorMessage() {
+    when(apiGatewayProxyRequestEvent.getBody()).thenReturn("{}");
+    when(context.getLogger()).thenReturn(logger);
+    AwsErrorDetails awsErrorDetails = AwsErrorDetails
+            .builder()
+            .errorCode("")
+            .sdkHttpResponse(SdkHttpResponse.builder().statusCode(500).build())
+            .errorMessage("AwsServiceException took place")
+            .build();
+    when(cognitoUserService.createUser(any(), any(), any(), any())).thenThrow(
+            AwsServiceException
+                    .builder()
+                    .statusCode(500)
+                    .awsErrorDetails(awsErrorDetails)
+                    .build()
+    );
+
+    // act or when
+    APIGatewayProxyResponseEvent responseEvent = handler.handleRequest(apiGatewayProxyRequestEvent, context);
+    String responseBody = responseEvent.getBody();
+    JsonObject responseBodyJson = JsonParser.parseString(responseBody).getAsJsonObject();
+
+    assertEquals(
+            Integer.valueOf(awsErrorDetails.sdkHttpResponse().statusCode()),
+            responseEvent.getStatusCode()
+    );
+    assertEquals(awsErrorDetails.errorMessage(), responseBodyJson.get("message").getAsString());
   }
 }
